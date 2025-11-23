@@ -3,7 +3,7 @@ import {
   useState,
   useEffect,
   useMemo,
-  PropsWithChildren,
+  type PropsWithChildren,
 } from "react";
 import apiClient from "@/api";
 

@@ -35,10 +35,10 @@ const baseTradeSchema = z.object({
   }),
   reason: z.string().min(1, "Reason is required"),
   status: z.enum(["open", "closed"]),
-  entryPrice: z.coerce.number().min(0),
-  quantity: z.coerce.number().int().min(1),
-  profitLoss: z.coerce.number().optional(),
-  profitLossPercentage: z.coerce.number().optional(),
+  entryPrice: z.number().min(0),
+  quantity: z.number().int().min(1),
+  profitLoss: z.number().optional(),
+  profitLossPercentage: z.number().optional(),
 });
 
 // Define the validation for the image file
@@ -81,6 +81,15 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
     formState: { errors, isSubmitting },
   } = useForm<TradeFormValues>({
     resolver: zodResolver(tradeSchema),
+    defaultValues: {
+      date: trade ? new Date(trade.date).toISOString().substring(0, 10) : "",
+      reason: trade ? trade.reason : "",
+      status: trade ? trade.status : "open",
+      entryPrice: trade ? trade.entryPrice : 0,
+      quantity: trade ? trade.quantity : 1,
+      profitLoss: trade ? trade.profitLoss : undefined,
+      profitLossPercentage: trade ? trade.profitLossPercentage : undefined,
+    },
   });
 
   useEffect(() => {
@@ -168,7 +177,7 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
     const formData = new FormData();
     Object.entries(data).forEach(([key, value]) => {
       if (key === "setupImage") {
-        if (value && value[0]) {
+        if (value instanceof FileList && value.length > 0) {
           formData.append(key, value[0]);
         }
       } else if (value !== undefined && value !== null) {
@@ -244,7 +253,7 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
               id="entryPrice"
               type="number"
               step="0.01"
-              {...register("entryPrice")}
+              {...register("entryPrice", { valueAsNumber: true })}
             />
             {errors.entryPrice && (
               <p className="text-red-500 text-sm">
@@ -254,7 +263,11 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="quantity">Quantity</Label>
-            <Input id="quantity" type="number" {...register("quantity")} />
+            <Input
+              id="quantity"
+              type="number"
+              {...register("quantity", { valueAsNumber: true })}
+            />
             {errors.quantity && (
               <p className="text-red-500 text-sm">{errors.quantity.message}</p>
             )}
@@ -268,7 +281,7 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
               id="profitLoss"
               type="number"
               step="0.01"
-              {...register("profitLoss")}
+              {...register("profitLoss", { valueAsNumber: true })}
             />
             {errors.profitLoss && (
               <p className="text-red-500 text-sm">
@@ -282,7 +295,7 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
               id="profitLossPercentage"
               type="number"
               step="0.01"
-              {...register("profitLossPercentage")}
+              {...register("profitLossPercentage", { valueAsNumber: true })}
             />
             {errors.profitLossPercentage && (
               <p className="text-red-500 text-sm">
