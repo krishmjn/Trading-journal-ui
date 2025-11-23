@@ -3,45 +3,30 @@ import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import {
   PlusCircle,
-  MoreHorizontal,
   TrendingUp,
   TrendingDown,
   Scale,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTrades, deleteTrade } from "@/api/trades";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableCaption,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TradeForm from "@/components/trades/TradeForm";
+import TradesTable from "@/components/trades/TradesTable";
 import { toast } from "sonner";
 import { type ITrade } from "@/types";
 
 const DashboardPage = () => {
   const queryClient = useQueryClient();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false); // For TradeForm (Add/Edit)
   const [selectedTrade, setSelectedTrade] = useState<ITrade | undefined>(
     undefined
-  );
+  ); // For TradeForm (Edit)
+
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false); // For TradeDetails
+  const [selectedTradeDetails, setSelectedTradeDetails] = useState<ITrade | undefined>(
+    undefined
+  ); // For TradeDetails
 
   const { data: trades, isLoading } = useQuery({
     queryKey: ["trades"],
@@ -76,6 +61,17 @@ const DashboardPage = () => {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setSelectedTrade(undefined);
+  };
+
+  // Handlers for TradeDetails Dialog
+  const handleRowClick = (trade: ITrade) => {
+    setSelectedTradeDetails(trade);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleDetailsDialogClose = () => {
+    setIsDetailsDialogOpen(false);
+    setSelectedTradeDetails(undefined);
   };
 
   const totalTrades = trades?.length || 0;
@@ -137,127 +133,21 @@ const DashboardPage = () => {
         </Card>
       </div>
 
-      {isLoading ? (
-        <p>Loading trades...</p>
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            {trades && trades.length === 0 && (
-              <TableCaption>A list of your recent trades.</TableCaption>
-            )}
-            <TableHeader>
-              <TableRow>
-                <TableHead>Image</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Entry Price</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>P/L</TableHead>
-                <TableHead>P/L %</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {trades && trades.length > 0 ? (
-                trades.map((trade: ITrade) => (
-                  <TableRow key={trade._id}>
-                    <TableCell>
-                      <Popover>
-                        <PopoverTrigger>
-                          <img
-                            src={trade.setupImage}
-                            alt="Setup"
-                            className="h-10 w-10 object-cover rounded-md"
-                          />
-                        </PopoverTrigger>
-                        <PopoverContent>
-                          <img
-                            src={trade.setupImage}
-                            alt="Setup"
-                            className="w-full rounded-md"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(trade.date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>{trade.reason}</TableCell>
-                    <TableCell>{trade.status}</TableCell>
-                    <TableCell>{trade.entryPrice}</TableCell>
-                    <TableCell>{trade.quantity}</TableCell>
-                    <TableCell
-                      className={
-                        (trade.profitLoss || 0) >= 0
-                          ? "text-green-500"
-                          : "text-red-500"
-                      }
-                    >
-                      {trade.profitLoss?.toFixed(2) ?? "N/A"}
-                    </TableCell>
-                    <TableCell
-                      className={
-                        (trade.profitLossPercentage || 0) >= 0
-                          ? "text-green-500"
-                          : "text-red-500"
-                      }
-                    >
-                      {trade.profitLossPercentage?.toFixed(2) ?? "N/A"}%
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => handleEditClick(trade)}
-                          >
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(trade._id)}
-                            className="text-red-500"
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <h3 className="text-xl font-semibold">
-                        No trades yet
-                      </h3>
-                      <p>
-                        You haven't added any trades yet. Get started by
-                        adding one.
-                      </p>
-                      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogTrigger asChild>
-                           <Button onClick={handleAddClick}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add New Trade
-                          </Button>
-                        </DialogTrigger>
-                        <TradeForm trade={selectedTrade} onClose={handleDialogClose} />
-                      </Dialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <TradesTable
+        trades={trades}
+        isLoading={isLoading}
+        handleEditClick={handleEditClick}
+        handleDelete={handleDelete}
+        isDialogOpen={isDialogOpen}
+        handleAddClick={handleAddClick}
+        handleDialogClose={handleDialogClose}
+        selectedTrade={selectedTrade}
+        isDeleting={deleteMutation.isPending}
+        onRowClick={handleRowClick}
+        onDetailsDialogClose={handleDetailsDialogClose}
+        isDetailsDialogOpen={isDetailsDialogOpen}
+        selectedTradeDetails={selectedTradeDetails}
+      />
     </Layout>
   );
 };

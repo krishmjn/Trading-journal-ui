@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,6 +26,7 @@ import { createTrade, updateTrade } from "@/api/trades";
 import { toast } from "sonner";
 import { type ITrade } from "@/types";
 import axios from "axios";
+import { Loader2 } from "lucide-react";
 
 // Define a base schema without the setupImage for reuse
 const baseTradeSchema = z.object({
@@ -41,7 +43,7 @@ const baseTradeSchema = z.object({
 
 // Define the validation for the image file
 const imageSchema = z
-  .any()
+  .instanceof(FileList)
   .refine((files) => files?.length === 1, "Image is required.")
   .refine(
     (files) => files?.[0]?.size <= 5000000, // 5MB
@@ -65,7 +67,7 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
 
   // Conditionally create the schema based on whether it's a create or update operation
   const tradeSchema = baseTradeSchema.extend({
-    setupImage: trade ? z.any().optional() : imageSchema,
+    setupImage: trade ? z.instanceof(FileList).optional() : imageSchema,
   });
 
   type TradeFormValues = z.infer<typeof tradeSchema>;
@@ -74,19 +76,53 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
     register,
     handleSubmit,
     control,
+    watch,
+    reset, // Get reset from useForm
     formState: { errors, isSubmitting },
   } = useForm<TradeFormValues>({
     resolver: zodResolver(tradeSchema),
-    defaultValues: {
-      date: trade ? new Date(trade.date).toISOString().substring(0, 10) : "",
-      reason: trade?.reason || "",
-      status: trade?.status || "open",
-      entryPrice: trade?.entryPrice || 0,
-      quantity: trade?.quantity || 1,
-      profitLoss: trade?.profitLoss || undefined,
-      profitLossPercentage: trade?.profitLossPercentage || undefined,
-    },
   });
+
+  useEffect(() => {
+    if (trade) {
+      reset({
+        date: new Date(trade.date).toISOString().substring(0, 10),
+        reason: trade.reason,
+        status: trade.status,
+        entryPrice: trade.entryPrice,
+        quantity: trade.quantity,
+        profitLoss: trade.profitLoss,
+        profitLossPercentage: trade.profitLossPercentage,
+      });
+    } else {
+      reset({
+        date: "",
+        reason: "",
+        status: "open",
+        entryPrice: 0,
+        quantity: 1,
+        profitLoss: undefined,
+        profitLossPercentage: undefined,
+      });
+    }
+  }, [trade, reset]);
+
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const setupImage = watch("setupImage");
+
+  useEffect(() => {
+    if (setupImage && setupImage.length > 0) {
+      const file = setupImage[0];
+      const objectUrl = URL.createObjectURL(file);
+      setImagePreview(objectUrl);
+
+      return () => URL.revokeObjectURL(objectUrl);
+    } else if (trade?.setupImage) {
+      setImagePreview(trade.setupImage);
+    } else {
+      setImagePreview(null);
+    }
+  }, [setupImage, trade, reset]);
 
   const handleError = (error: unknown, defaultMessage: string) => {
     let errorMessage = defaultMessage;
@@ -146,6 +182,9 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
       createMutation.mutate(formData);
     }
   };
+
+  const isFormLoading =
+    isSubmitting || createMutation.isPending || updateMutation.isPending;
 
   return (
     <DialogContent>
@@ -255,6 +294,13 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
 
         <div className="space-y-2">
           <Label htmlFor="setupImage">Setup Image</Label>
+          {imagePreview && (
+            <img
+              src={imagePreview}
+              alt="Setup Preview"
+              className="w-full h-40 object-cover rounded-md mt-2"
+            />
+          )}
           <Input id="setupImage" type="file" {...register("setupImage")} />
           {errors.setupImage && (
             <p className="text-red-500 text-sm">
@@ -265,10 +311,19 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline" disabled={isFormLoading}>
+              Cancel
+            </Button>
           </DialogClose>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save"}
+          <Button type="submit" disabled={isFormLoading}>
+            {isFormLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {trade
+              ? isFormLoading
+                ? "Updating..."
+                : "Update"
+              : isFormLoading
+              ? "Creating..."
+              : "Create"}
           </Button>
         </DialogFooter>
       </form>
