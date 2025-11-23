@@ -10,12 +10,17 @@ import RegisterPage from "@/pages/RegisterPage";
 import DashboardPage from "@/pages/DashboardPage";
 import { useAuth } from "@/common/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
+import Loader from "@/components/ui/Loader"; // Import the Loader component
 
 const PrivateRoutes = () => {
   const { token, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // Or a spinner component
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader />
+      </div>
+    );
   }
 
   return token ? <Outlet /> : <Navigate to="/login" />;

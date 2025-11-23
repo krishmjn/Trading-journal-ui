@@ -1,3 +1,4 @@
+import Loader from "@/components/ui/Loader"; // Import the new Loader component
 import {
   Table,
   TableBody,
@@ -59,62 +60,11 @@ const TradesTable: React.FC<TradesTableProps> = ({
   selectedTradeDetails,
 }) => {
   if (isLoading) {
-    return (
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Image</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Entry Price</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>P/L</TableHead>
-              <TableHead>P/L %</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell>
-                  <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
+    return <Loader />;
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         {trades && trades.length === 0 && (
           <TableCaption>A list of your recent trades.</TableCaption>
