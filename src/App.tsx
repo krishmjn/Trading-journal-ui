@@ -1,12 +1,20 @@
-import { Button } from "@/components/ui/button";
-import React from "react";
+import AppRouter from "./router";
+import { AuthProvider } from "./contexts/AuthContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "./components/layout/ThemeProvider";
 
-const App = () => {
+const queryClient = new QueryClient();
+
+function App() {
   return (
-    <div>
-      <Button />
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <AuthProvider>
+          <AppRouter />
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
-};
+}
 
 export default App;
