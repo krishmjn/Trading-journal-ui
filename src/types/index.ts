@@ -10,3 +10,10 @@ export interface ITrade {
   profitLossPercentage?: number;
   userId: string;
 }
+
+export interface IStrategy {
+  _id: string;
+  date: Date;
+  content: string;
+  userId: string;
+}
