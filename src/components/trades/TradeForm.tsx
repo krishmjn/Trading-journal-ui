@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils";
 // Define a base schema without the setupImage for reuse
 const baseTradeSchema = z.object({
   date: z.date({
-    required_error: "A date is required.",
+    message: "A date is required.",
   }),
   reason: z.string().min(1, "Reason is required"),
   status: z.enum(["open", "closed"]),

@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -27,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 const strategySchema = z.object({
   date: z.date({
-    required_error: "A date is required.",
+    message: "A date is required.",
   }),
   content: z.string().min(1, "Content is required"),
 });
@@ -98,8 +97,13 @@ const StrategyForm = ({ strategy, onClose }: StrategyFormProps) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: StrategyFormValues }) =>
-      updateStrategy(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { date: string; content: string };
+    }) => updateStrategy(id, data),
     onSuccess: () => {
       toast.success("Strategy updated successfully");
       queryClient.invalidateQueries({ queryKey: ["strategies"] });
