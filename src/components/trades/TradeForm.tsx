@@ -26,12 +26,16 @@ import { createTrade, updateTrade } from "@/api/trades";
 import { toast } from "sonner";
 import { type ITrade } from "@/types";
 import axios from "axios";
-import { Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // Define a base schema without the setupImage for reuse
 const baseTradeSchema = z.object({
-  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: "Invalid date",
+  date: z.date({
+    required_error: "A date is required.",
   }),
   reason: z.string().min(1, "Reason is required"),
   status: z.enum(["open", "closed"]),
@@ -77,12 +81,12 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
     handleSubmit,
     control,
     watch,
-    reset, // Get reset from useForm
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<TradeFormValues>({
     resolver: zodResolver(tradeSchema),
     defaultValues: {
-      date: trade ? new Date(trade.date).toISOString().substring(0, 10) : "",
+      date: trade ? new Date(trade.date) : new Date(),
       reason: trade ? trade.reason : "",
       status: trade ? trade.status : "open",
       entryPrice: trade ? trade.entryPrice : 0,
@@ -95,7 +99,7 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
   useEffect(() => {
     if (trade) {
       reset({
-        date: new Date(trade.date).toISOString().substring(0, 10),
+        date: new Date(trade.date),
         reason: trade.reason,
         status: trade.status,
         entryPrice: trade.entryPrice,
@@ -105,7 +109,7 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
       });
     } else {
       reset({
-        date: "",
+        date: new Date(),
         reason: "",
         status: "open",
         entryPrice: 0,
@@ -180,6 +184,8 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
         if (value instanceof FileList && value.length > 0) {
           formData.append(key, value[0]);
         }
+      } else if (key === "date") {
+        formData.append(key, (value as Date).toISOString()); // Convert Date object to ISO string
       } else if (value !== undefined && value !== null) {
         formData.append(key, String(value));
       }
@@ -207,7 +213,34 @@ const TradeForm = ({ trade, onClose }: TradeFormProps) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="date">Date</Label>
-            <Input id="date" type="date" {...register("date")} />
+            <Controller
+              name="date"
+              control={control}
+              render={({ field }) => (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+            />
             {errors.date && (
               <p className="text-red-500 text-sm">{errors.date.message}</p>
             )}

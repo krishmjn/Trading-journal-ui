@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,15 @@ import { createStrategy, updateStrategy } from "@/api/strategy";
 import { toast } from "sonner";
 import { type IStrategy } from "@/types";
 import axios from "axios";
-import { Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const strategySchema = z.object({
-  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: "Invalid date",
+  date: z.date({
+    required_error: "A date is required.",
   }),
   content: z.string().min(1, "Content is required"),
 });
@@ -42,11 +46,12 @@ const StrategyForm = ({ strategy, onClose }: StrategyFormProps) => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<StrategyFormValues>({
     resolver: zodResolver(strategySchema),
     defaultValues: {
-      date: strategy ? new Date(strategy.date).toISOString().substring(0, 10) : "",
+      date: strategy ? new Date(strategy.date) : new Date(),
       content: strategy ? strategy.content : "",
     },
   });
@@ -54,12 +59,12 @@ const StrategyForm = ({ strategy, onClose }: StrategyFormProps) => {
   useEffect(() => {
     if (strategy) {
       reset({
-        date: new Date(strategy.date).toISOString().substring(0, 10),
+        date: new Date(strategy.date),
         content: strategy.content,
       });
     } else {
       reset({
-        date: "",
+        date: new Date(),
         content: "",
       });
     }
@@ -106,10 +111,15 @@ const StrategyForm = ({ strategy, onClose }: StrategyFormProps) => {
   });
 
   const onSubmit = (data: StrategyFormValues) => {
+    // Convert date to ISO string for the API
+    const dataToSend = {
+      ...data,
+      date: data.date.toISOString(),
+    };
     if (strategy) {
-      updateMutation.mutate({ id: strategy._id, data });
+      updateMutation.mutate({ id: strategy._id, data: dataToSend });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(dataToSend);
     }
   };
 
@@ -126,7 +136,34 @@ const StrategyForm = ({ strategy, onClose }: StrategyFormProps) => {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="date">Date</Label>
-          <Input id="date" type="date" {...register("date")} />
+          <Controller
+            control={control}
+            name="date"
+            render={({ field }) => (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !field.value && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          />
           {errors.date && (
             <p className="text-red-500 text-sm">{errors.date.message}</p>
           )}
